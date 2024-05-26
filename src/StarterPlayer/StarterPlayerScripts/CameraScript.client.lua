@@ -2,8 +2,9 @@ local currentCamera = workspace.CurrentCamera
 currentCamera.CameraType = Enum.CameraType.Scriptable
 local playerService = game:GetService("Players")
 local tweenService = game:GetService("TweenService")
+local cameraTweenInfo = TweenInfo.new(0.02, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
 
-local humanoidRootParts = {playerService.LocalPlayer.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")}
+local humanoidRootParts = {}
 
 local xoffset = 0
 local yoffset = 2
@@ -11,19 +12,17 @@ local zoffset = 40
 
 local camPart = Instance.new("Part")
 camPart.Anchored = true
-camPart.Name = "CamPart"
+camPart.Name = "camPart"
 camPart.Parent = workspace
 camPart.Transparency = 1
 camPart.CanCollide = false
 
 local function calculateAveragePosition()
-	local totalOfPositions = Vector3.new()
-
-	for _, humanoidRootPart in pairs(humanoidRootParts) do
-		totalOfPositions += humanoidRootPart.Position
+	local total = Vector3.new()
+	for _, humrootpart in pairs(humanoidRootParts) do
+		total += humrootpart.Position
 	end
-
-	return totalOfPositions / #humanoidRootParts
+	return total / #humanoidRootParts
 end
 
 local function calculateAverageMagnitude()
@@ -37,12 +36,22 @@ local function calculateAverageMagnitude()
 end
 
 local function camManager()
-	local averagePos = calculateAveragePosition()
-	camPart.Position = averagePos
 	local averageMagnitude = calculateAverageMagnitude() + zoffset
-	local tweenInfo = TweenInfo.new(0.02, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
-	local propertyTable = {CFrame = camPart.CFrame * CFrame.new(xoffset, yoffset, averageMagnitude)}
-	tweenService:Create(currentCamera, tweenInfo, propertyTable):Play()
+	local averagePos = calculateAveragePosition()
+	print(averagePos)
+	camPart.Position = averagePos
+	local tweenPropertyTable = {CFrame = camPart.CFrame * CFrame.new(xoffset, yoffset, averageMagnitude + zoffset)}
+	local tween = tweenService:Create(camPart, cameraTweenInfo, tweenPropertyTable)
+	tween:Play()
+end
+
+local function addToCamList(player:Player)
+	humanoidRootParts[#humanoidRootParts+1] = player.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")
+	for index, value in pairs(humanoidRootParts) do
+		print(index)
+		print(value)
+	end
 end
 
 game:GetService("RunService").Heartbeat:Connect(camManager)
+playerService.PlayerAdded:Connect(addToCamList)
