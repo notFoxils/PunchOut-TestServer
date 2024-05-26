@@ -4,7 +4,6 @@ local UIS = game:GetService("UserInputService")
 local Players = game:GetService("Players")
 
 local humanoidRootPart = Players.LocalPlayer.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")
-print(humanoidRootPart)
 
 local leftValue, rightValue = 0, 0
 local movementDirection:Vector2 = Vector2.new(rightValue + leftValue, 0)
@@ -13,10 +12,8 @@ local runningSpeed = 1320/28
 
 local function handleMovementX()
 	if math.abs(movementDirection.X) >= 0.8 and UIS:IsKeyDown(Enum.KeyCode.Space) == false then
-		print(runningSpeed * movementDirection.X.."run")
 		return runningSpeed * movementDirection.X
 	elseif math.abs(movementDirection.X) >= 0.2875 and UIS:IsKeyDown(Enum.KeyCode.Space) == true then
-		print(walkingSpeed * movementDirection.X.."walk")
 		return walkingSpeed * movementDirection.X
 	else
 		return 0

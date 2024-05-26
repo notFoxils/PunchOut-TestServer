@@ -4,7 +4,7 @@ local playerService = game:GetService("Players")
 local tweenService = game:GetService("TweenService")
 local cameraTweenInfo = TweenInfo.new(0.02, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
 
-local humanoidRootParts = {}
+local humanoidRootParts = {playerService.LocalPlayer.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")}
 
 local xoffset = 0
 local yoffset = 2
@@ -38,20 +38,9 @@ end
 local function camManager()
 	local averageMagnitude = calculateAverageMagnitude() + zoffset
 	local averagePos = calculateAveragePosition()
-	print(averagePos)
 	camPart.Position = averagePos
 	local tweenPropertyTable = {CFrame = camPart.CFrame * CFrame.new(xoffset, yoffset, averageMagnitude + zoffset)}
-	local tween = tweenService:Create(camPart, cameraTweenInfo, tweenPropertyTable)
-	tween:Play()
-end
-
-local function addToCamList(player:Player)
-	humanoidRootParts[#humanoidRootParts+1] = player.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")
-	for index, value in pairs(humanoidRootParts) do
-		print(index)
-		print(value)
-	end
+	tweenService:Create(currentCamera, cameraTweenInfo, tweenPropertyTable):Play()
 end
 
 game:GetService("RunService").Heartbeat:Connect(camManager)
-playerService.PlayerAdded:Connect(addToCamList)
