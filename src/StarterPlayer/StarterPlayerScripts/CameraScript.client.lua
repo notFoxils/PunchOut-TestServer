@@ -46,4 +46,3 @@ task.wait()
 cam.CameraType = Enum.CameraType.Scriptable
 
 game:GetService("RunService").Heartbeat:Connect(camManager)
-
