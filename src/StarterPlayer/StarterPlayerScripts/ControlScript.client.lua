@@ -27,7 +27,14 @@ local function handleMovementX()
 		movementDirection = Vector2.new(rightValue + leftValue, 0)
 	end
 	if (movementDirection ~= vectorZero) then
-		local targetSpeed = (math.abs(movementDirection.X) >= 0.8 and UIS:IsKeyDown(Enum.KeyCode.Space) == false) and runningSpeed * movementDirection.X or (math.abs(movementDirection.X) >= 0.2875 and UIS:IsKeyDown(Enum.KeyCode.Space) == true) and walkingSpeed * movementDirection.X or 0
+		local targetSpeed
+		if math.abs(movementDirection.X) >= 0.8 and UIS:IsKeyDown(Enum.KeyCode.Space) == false then
+			targetSpeed = runningSpeed * movementDirection.X
+		elseif math.abs(movementDirection.X) >= 0.2875 and UIS:IsKeyDown(Enum.KeyCode.Space) == true then
+			targetSpeed = walkingSpeed * movementDirection.X
+		else
+			targetSpeed = 0
+		end
 		return targetSpeed
 	end
 	return 0
@@ -46,7 +53,7 @@ local function controllerX(_actionName, inputState, inputObject:InputObject)
 end
 
 local function left(_actionName, inputState, inputObject:InputObject)
-    leftValue = (inputState == Enum.UserInputState.Begin) and -1 or 0
+	leftValue = (inputState == Enum.UserInputState.Begin) and -1 or 0
 end
 
 local function right(_actionName, inputState, inputObject:InputObject)

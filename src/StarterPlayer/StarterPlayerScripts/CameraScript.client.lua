@@ -1,7 +1,7 @@
 local cam = workspace.CurrentCamera
 local Players = game:GetService("Players")
 local ts = game:GetService("TweenService")
-task.wait(4)
+task.wait(5)
 local hurmps = {Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")}
 
 local xoffset = 0
