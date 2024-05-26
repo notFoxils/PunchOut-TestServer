@@ -1,8 +1,9 @@
-local cam = workspace.CurrentCamera
-local Players = game:GetService("Players")
-local ts = game:GetService("TweenService")
-task.wait(5)
-local hurmps = {Players.LocalPlayer.Character:WaitForChild("HumanoidRootPart")}
+local currentCamera = workspace.CurrentCamera
+currentCamera.CameraType = Enum.CameraType.Scriptable
+local playerService = game:GetService("Players")
+local tweenService = game:GetService("TweenService")
+
+local humanoidRootParts = {playerService.LocalPlayer.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")}
 
 local xoffset = 0
 local yoffset = 2
@@ -15,34 +16,33 @@ camPart.Parent = workspace
 camPart.Transparency = 1
 camPart.CanCollide = false
 
-function calculateAveragePosition()
-	local total = Vector3.new()
-	for _, humrootpart in pairs(hurmps) do    
-		total += humrootpart.Position
+local function calculateAveragePosition()
+	local totalOfPositions = Vector3.new()
+
+	for _, humanoidRootPart in pairs(humanoidRootParts) do
+		totalOfPositions += humanoidRootPart.Position
 	end
-	return total / #hurmps
+
+	return totalOfPositions / #humanoidRootParts
 end
 
-function calculateAverageMagnitude()
+local function calculateAverageMagnitude()
 	local total = 0
-	for _, humrootpart in pairs(hurmps) do    
-		total += (humrootpart.Position - camPart.Position).Magnitude
+
+	for _, humanoidRootPart in pairs(humanoidRootParts) do
+		total += (humanoidRootPart.Position - camPart.Position).Magnitude
 	end
 
-	return total / #hurmps
+	return total / #humanoidRootParts
 end
 
-function camManager()
+local function camManager()
 	local averagePos = calculateAveragePosition()
 	camPart.Position = averagePos
 	local averageMagnitude = calculateAverageMagnitude() + zoffset
 	local tweenInfo = TweenInfo.new(0.02, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
 	local propertyTable = {CFrame = camPart.CFrame * CFrame.new(xoffset, yoffset, averageMagnitude)}
-	
-	ts:Create(cam, tweenInfo, propertyTable):Play()
+	tweenService:Create(currentCamera, tweenInfo, propertyTable):Play()
 end
-
-task.wait()
-cam.CameraType = Enum.CameraType.Scriptable
 
 game:GetService("RunService").Heartbeat:Connect(camManager)
