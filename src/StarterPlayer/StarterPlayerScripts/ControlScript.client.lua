@@ -16,6 +16,7 @@ local jumpSquatFrames = 3
 local framesSinceJump = 0
 local timesJumped = 0
 local inAir = false
+local lastJump = "none"
 local movementDirection:Vector2 = Vector2.new(rightValue + leftValue, 0)
 local walkingSpeed = 960/28
 local runningSpeed = 1320/28
@@ -23,10 +24,10 @@ local jumpForce = 3.68
 local shortHopForce = 2.1
 
 local function handleMovementX()
-	if math.abs(movementDirection.X) >= 0.8 and UIS:IsKeyDown(Enum.KeyCode.Space) == false then
-		return runningSpeed * movementDirection.X
-	elseif math.abs(movementDirection.X) >= 0.2875 and UIS:IsKeyDown(Enum.KeyCode.Space) == true then
+	if math.abs(movementDirection.X) >= 0.2875 or UIS:IsKeyDown(Enum.KeyCode.Space) == true then
 		return walkingSpeed * movementDirection.X
+	elseif math.abs(movementDirection.X) >= 0.8 and UIS:IsKeyDown(Enum.KeyCode.Space) == false then
+		return runningSpeed * movementDirection.X
 	else
 		return 0
 	end
@@ -58,14 +59,14 @@ local function moveThePlayer(delta:number)
 end
 
 local function handleJumpForce()
-	if movementDirection.Y == 0 then
+	if movementDirection.Y == 0 or inAir then
 		if not isJumping and framesSinceJump > 0 then
 			if framesSinceJump <= jumpSquatFrames then
 				movementDirection = Vector2.new(movementDirection.X, shortHopForce)
-				print("short")
+				lastJump = "short"
 			elseif framesSinceJump >= jumpSquatFrames then
 				movementDirection = Vector2.new(movementDirection.X, jumpForce)
-				print("full")
+				lastJump = "full"
 			end
 			framesSinceJump = 0
 		elseif isJumping then
@@ -90,6 +91,8 @@ local function debugDisplay()
 				value.Text = tostring(framesSinceJump)
 			elseif index == 10 then
 				value.Text = tostring(movementDirection)
+			elseif index == 12 then
+				value.Text = lastJump
 			end
 		end
 	end
