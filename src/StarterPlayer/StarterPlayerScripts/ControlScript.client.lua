@@ -113,6 +113,25 @@ local function debugDisplay()
 	end
 end
 
+function isGrounded(part)
+    local rayStart = part.Position
+    local rayEnd = part.Position - Vector3.new(0, 5, 0) -- Extend the ray downwards by 5 studs
+
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Exclude
+    raycastParams.FilterDescendantsInstances = {part}
+
+    local result = workspace:Raycast(rayStart, rayEnd, raycastParams)
+
+    if result then
+        -- The part is grounded if the ray hits another part
+        return true
+    else
+        -- The part is not grounded if the ray doesn't hit anything
+        return false
+    end
+end
+
 local function onRenderStep(delta)
 	updateVelocity(delta)
 	updatePosition()
