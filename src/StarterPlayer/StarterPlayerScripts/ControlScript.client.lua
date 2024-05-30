@@ -34,11 +34,13 @@ local lastJump = "none"
 
 
 local function isGrounded()
-	local raycastResult = workspace:Raycast(humanoidRootPart.Position, Vector3.new(0, -1, 0), RaycastParams.new())
+	local raycastResult = workspace:Raycast(humanoidRootPart.Position, Vector3.new(0, -5, 0), RaycastParams.new())
 
-	if not raycastResult == nil then
+	print(raycastResult)
+	if not (raycastResult == nil) then
 		return true
 	end
+
 	return false
 end
 
@@ -107,7 +109,7 @@ local function debugDisplay()
 			elseif index == 14 then
 				value.Text = currentFallingSpeed
 			elseif index == 16 then
-				value.Text = tostring(isGrounded)
+				value.Text = tostring(isGrounded())
 			end
 		end
 	end
