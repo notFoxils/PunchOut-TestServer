@@ -2,6 +2,7 @@ local currentCamera = workspace.CurrentCamera
 currentCamera.CameraType = Enum.CameraType.Scriptable
 local playerService = game:GetService("Players")
 local tweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 local cameraTweenInfo = TweenInfo.new(0.02, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut)
 
 local humanoidRootParts = {playerService.LocalPlayer.CharacterAdded:Wait():WaitForChild("HumanoidRootPart")}
@@ -40,7 +41,9 @@ local function camManager()
 	local averagePos = calculateAveragePosition()
 	camPart.Position = averagePos
 	local tweenPropertyTable = {CFrame = camPart.CFrame * CFrame.new(xoffset, yoffset, averageMagnitude + zoffset)}
-	tweenService:Create(currentCamera, cameraTweenInfo, tweenPropertyTable):Play()
+	local cameraTween = tweenService:Create(currentCamera, cameraTweenInfo, tweenPropertyTable)
+	cameraTween:Play()
+	cameraTween:Destroy()
 end
 
-game:GetService("RunService").Heartbeat:Connect(camManager)
+RunService:BindToRenderStep("Camera", Enum.RenderPriority.Camera.Value, camManager)
