@@ -13,7 +13,7 @@ local humanoidRootPart = localPlayer.Character:WaitForChild("HumanoidRootPart")
 --input related variables, easily modularized:tm:
 local leftInput:number, rightInput:number = 0, 0
 local isJumping:boolean = false
-local jumpSuqatFramesSinceJump:number = 0
+local jumpSquatTimeJumped:number = 0
 local doubleJumpPossible:boolean = true
 local velocity:Vector3 = Vector3.zero
 local currentFallingSpeed:number = 0
@@ -21,26 +21,14 @@ local currentFallingSpeed:number = 0
 --statics, currently based off of converted values from fox in melee, should be modularized, but problem for later me :)
 local walkingSpeed = 960/28 --Studs/Frame
 local runningSpeed = 1320/28 --Studs/Frame
-local jumpForce = (3.68/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
+local fullJumpForce = (3.68/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
 local shortHopForce = (2.1/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
 local gravity = (0.23/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
 local fallingSpeed = (2.8/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
-local jumpSquatFrames = 3
+local jumpSquatDurationSecs = 0.05
 
 --debug
 local lastJump = "none"
-
-local function decrementJumpSquat()
-	if isJumping then
-		if jumpSuqatFramesSinceJump > 1 then
-			jumpSuqatFramesSinceJump -= 1
-		else
-			isJumping = false
-			jumpSuqatFramesSinceJump = 0
-			lastJump = "Full"
-		end
-	end
-end
 
 local function isGrounded()
 	local raycastResult = workspace:Raycast(humanoidRootPart.Position, Vector3.new(0, -5, 0), RaycastParams.new())
@@ -66,10 +54,18 @@ local function onJump(_actionName, inputState, _inputObject:InputObject)
 	if inputState == Enum.UserInputState.Begin and (currentGroundedStatus or doubleJumpPossible) then
 		doubleJumpPossible = (currentGroundedStatus) and true or false
 		isJumping = true
-		jumpSuqatFramesSinceJump = jumpSquatFrames
+		jumpSquatTimeJumped = os.clock() --Set the player's time jumped to now
 	elseif inputState == Enum.UserInputState.End and isJumping then
+		-- how long have they held the jump button?
+		local now = os.clock()
+		
+		if now - jumpSquatTimeJumped < jumpSquatDurationSecs then -- below our short jump threshold
+			lastJump = "Short"
+		else -- above our short jump threshold
+			lastJump = "Full"
+		end
+		
 		isJumping = false
-		lastJump = "Short"
 	end
 end
 
@@ -90,11 +86,31 @@ local function handleMovementX()
 end
 
 local function handleMovementY()
+	local currentGroundedStatus = isGrounded()
+
+	if not currentGroundedStatus then
+		if currentFallingSpeed ~= fallingSpeed then
+			currentFallingSpeed = math.min(currentFallingSpeed - gravity, fallingSpeed)
+		end
+	end
+	if currentGroundedStatus then
+		currentFallingSpeed = 0
+	end
+	if lastJump ~= nil then
+		if lastJump == "Full" then
+			lastJump = nil
+			return fullJumpForce
+		elseif lastJump == "Short" then
+			lastJump = nil
+			return shortHopForce
+		end
+	end
 	
+	return 0
 end
 
 local function updateVelocity(delta:number)
-	velocity = Vector3.new(handleMovementX() * delta)--, handleMovementY() * delta)
+	velocity = Vector3.new(handleMovementX() * delta, (handleMovementY() - currentFallingSpeed) * delta)
 end
 
 local function updatePosition()
@@ -111,11 +127,11 @@ local function debugDisplay()
 			elseif index == 6 then
 				value.Text = tostring(isJumping)
 			elseif index == 8 then
-				value.Text = tostring(jumpSuqatFramesSinceJump)
+				value.Text = tostring(jumpSquatTimeJumped)
 			elseif index == 10 then
 				value.Text = tostring(velocity)
 			elseif index == 12 then
-				value.Text = lastJump
+				value.Text = tostring(lastJump)
 			elseif index == 14 then
 				value.Text = currentFallingSpeed
 			elseif index == 16 then
@@ -126,7 +142,6 @@ local function debugDisplay()
 end
 
 local function onRenderStep(delta)
-	decrementJumpSquat()
 	updateVelocity(delta)
 	updatePosition()
 	debugDisplay()
