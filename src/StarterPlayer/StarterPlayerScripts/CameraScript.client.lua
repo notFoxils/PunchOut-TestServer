@@ -17,6 +17,8 @@ camPart.Name = "camPart"
 camPart.Parent = workspace
 camPart.Transparency = 1
 camPart.CanCollide = false
+camPart.CanTouch = false
+camPart.CanQuery = false
 
 local function calculateAveragePosition()
 	local total = Vector3.new()
