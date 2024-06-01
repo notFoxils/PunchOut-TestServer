@@ -8,7 +8,7 @@ local playerGui = localPlayer:WaitForChild("PlayerGui")
 local debugFrame = playerGui:WaitForChild("DebugGui").DebugFrame
 local debugValues = debugFrame:GetDescendants()
 
-local humanoidRootPart = localPlayer.Character:WaitForChild("HumanoidRootPart")
+local humanoidRootPart:Part = localPlayer.Character:WaitForChild("HumanoidRootPart")
 
 --input related variables, easily modularized:tm:
 local leftInput:number, rightInput:number = 0, 0
@@ -19,6 +19,7 @@ local velocity:Vector3 = Vector3.zero
 local xVelocity:number = 0
 local yVelocity:number = 0
 local currentFallingSpeed:number = 0
+local currentGroundedStatus = true
 
 --statics, currently based off of converted values from fox in melee, should be modularized, but problem for later me :)
 local walkingSpeed = 960/28 --Studs/Frame
@@ -28,17 +29,22 @@ local shortHopForce = (2.1/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smas
 local gravity = (0.23/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
 local fallingSpeed = (2.8/2.8)*60 --(Studs/Frame)*60 || Studs/Frame = (SU (Smash Unit)/Frame)/2.8
 local jumpSquatDurationSecs = 0.05
+local groundedY = 4.01
+
 --debug
-local lastJump = "none"
+local lastJump = nil
 
 local function isGrounded()
-	local raycastResult = workspace:Raycast(humanoidRootPart.Position, Vector3.new(0, -3.9, 0), RaycastParams.new())
+	local raycastResult = workspace:Raycast(humanoidRootPart.Position, Vector3.new(0, -4.011, 0), RaycastParams.new())
 
 	if raycastResult ~= nil then
-		return true
+		--print("grounded")
+		currentGroundedStatus = true
+		return
 	end
 
-	return false
+	--print("not grounded")
+	currentGroundedStatus = false
 end
 
 local function left(_actionName, inputState, _inputObject:InputObject)
@@ -50,23 +56,21 @@ local function right(_actionName, inputState, _inputObject:InputObject)
 end
 
 local function onJump(_actionName, inputState, _inputObject:InputObject)
-	local currentGroundedStatus = isGrounded()
-
 	if inputState == Enum.UserInputState.Begin and (currentGroundedStatus or doubleJumpPossible) then
 		doubleJumpPossible = (currentGroundedStatus) and true or false
-		isJumping = true
-		jumpSquatTimeJumped = os.clock() --Set the player's time jumped to now
-	elseif inputState == Enum.UserInputState.End and isJumping then
-		-- how long have they held the jump button?
+		jumpSquatTimeJumped = os.clock()
+	elseif inputState == Enum.UserInputState.End then
 		local now = os.clock()
-		
-		if now - jumpSquatTimeJumped < jumpSquatDurationSecs then -- below our short jump threshold
-			lastJump = "Short"
-		else -- above our short jump threshold
-			lastJump = "Full"
+
+		if lastJump ~= nil then
+			if now - jumpSquatTimeJumped < jumpSquatDurationSecs then
+				lastJump = "Short"
+			else
+				lastJump = "Full"
+			end
 		end
-		
-		isJumping = false
+
+		isJumping = true
 	end
 end
 
@@ -77,43 +81,54 @@ end
 local function handleMovementX()
 	local currentInputX = horizontalInput()
 
-	if math.abs(currentInputX) >= 0.2875 or UserInputService:IsKeyDown(Enum.KeyCode.Space) == true then --The keycode should be user configureable later on
-		return walkingSpeed * currentInputX
-	elseif math.abs(currentInputX) >= 0.8 and UserInputService:IsKeyDown(Enum.KeyCode.Space) == false then --The keycode should be user configureable later on
+	if math.abs(currentInputX) >= 0.8 and UserInputService:IsKeyDown(Enum.KeyCode.Space) == false then --The keycode should be user configureable later on
 		return runningSpeed * currentInputX
+	elseif math.abs(currentInputX) >= 0.2875 or UserInputService:IsKeyDown(Enum.KeyCode.Space) == true then --The keycode should be user configureable later on
+		return walkingSpeed * currentInputX
 	end
 
 	return 0
 end
 
-local function handleMovementY()
-	print("asking for grounded status")
-	local currentGroundedStatus = isGrounded()
+local function handleMovementY(delta:number)
+	if currentGroundedStatus and isJumping == false then
+		local humanoidRootPartPivot = humanoidRootPart:GetPivot()
 
-	if not currentGroundedStatus then
-		if currentFallingSpeed ~= fallingSpeed and yVelocity > 0 then
-			print("setting fall speed non 0")
-			currentFallingSpeed = math.min(currentFallingSpeed + gravity, fallingSpeed)
+		if currentFallingSpeed ~= 0 then
+			--print("fall speed 0")
+			currentFallingSpeed = 0
 		end
-	end
-	if currentGroundedStatus and lastJump == nil then
-		currentFallingSpeed = 0
+		if humanoidRootPartPivot.Y ~= groundedY then
+			humanoidRootPart:PivotTo(CFrame.new(Vector3.new(humanoidRootPartPivot.X, groundedY, humanoidRootPartPivot.Z)))
+		end
 		return 0
 	end
-	if lastJump == "Full" then
-		lastJump = nil
-		return fullJumpForce
-	elseif lastJump == "Short" then
-		lastJump = nil
-		return shortHopForce
+
+	if not currentGroundedStatus then
+		if currentFallingSpeed ~= fallingSpeed then
+			--print("adding falling speed")
+			currentFallingSpeed = math.min(currentFallingSpeed - gravity, fallingSpeed)
+		end
+		return yVelocity + currentFallingSpeed * delta
 	end
 
-	return yVelocity - currentFallingSpeed
+	if isJumping and lastJump ~= nil then
+		isJumping = false
+		if lastJump == "Full" then
+			lastJump = nil
+			return fullJumpForce
+		elseif lastJump == "Short" then
+			lastJump = nil
+			return shortHopForce
+		end
+	end
+
+	return yVelocity
 end
 
 local function updateVelocity(delta:number)
 	xVelocity = handleMovementX()
-	yVelocity = handleMovementY()
+	yVelocity = handleMovementY(delta)
 
 	velocity = Vector3.new(xVelocity * delta, yVelocity * delta)
 end
@@ -140,13 +155,14 @@ local function debugDisplay()
 			elseif index == 14 then
 				value.Text = currentFallingSpeed
 			elseif index == 16 then
-				value.Text = tostring(isGrounded())
+				value.Text = tostring(currentGroundedStatus)
 			end
 		end
 	end
 end
 
 local function onRenderStep(delta)
+	isGrounded()
 	updateVelocity(delta)
 	updatePosition()
 	debugDisplay()
